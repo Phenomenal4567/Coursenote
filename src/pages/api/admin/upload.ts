@@ -19,6 +19,8 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  console.log('API route reached')
+
   if (req.method !== 'POST') {
     return res.status(405).end()
   }
@@ -29,6 +31,8 @@ export default async function handler(
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
+  console.log('About to create formidable')
+
   const form = formidable({
     maxFileSize: 50 * 1024 * 1024,
   })
@@ -37,13 +41,20 @@ export default async function handler(
   let files: Files
 
   try {
+    console.log('About to parse form')
+
     ;[fields, files] = await form.parse(req)
-  } catch {
+
+    console.log('Form parsed successfully')
+  } catch (err) {
+    console.error('Parse error:', err)
+
     return res.status(400).json({
       error: 'Failed to parse upload',
     })
   }
 
+  console.log('Continuing after parse')
   const fieldsRecord = fields as Record<string, unknown>
 
   const get = (fieldName: string): string => {

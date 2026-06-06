@@ -37,39 +37,80 @@ export default function AdminDashboard({ courses: initialCourses, totalDownloads
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault()
     const file = fileRef.current?.files?.[0]
-    if (!file) return showMsg('Please select a PDF file.', 'error')
-    if (!file.name.endsWith('.pdf')) return showMsg('Only PDF files allowed.', 'error')
-    if (file.size > 50 * 1024 * 1024) return showMsg('File too large (max 50 MB).', 'error')
+
+    // For new courses a file is required; for edits it is optional
+    if (!editingId && !file) return showMsg('Please select a PDF file.', 'error')
+    if (file && !file.name.endsWith('.pdf')) return showMsg('Only PDF files allowed.', 'error')
+    if (file && file.size > 50 * 1024 * 1024) return showMsg('File too large (max 50 MB).', 'error')
 
     setUploading(true)
     setUploadProgress(0)
 
     try {
-      const fd = new FormData()
-      fd.append('file', file)
-      fd.append('title', form.title)
-      fd.append('course_code', form.course_code)
-      fd.append('level', form.level)
-      fd.append('semester', form.semester)
-      fd.append('description', form.description)
-      if (editingId) fd.append('editingId', editingId)
+      let file_path: string | null = null
+      let file_size: number = 0
 
-      const xhr = new XMLHttpRequest()
-      xhr.upload.onprogress = (ev) => {
-        if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100))
+      if (file) {
+        // Step 1: Get a signed upload URL from our API
+        setUploadProgress(5)
+        const urlRes = await fetch('/api/admin/create-upload-url', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ course_code: form.course_code, filename: file.name }),
+        })
+        if (!urlRes.ok) {
+          const { error } = await urlRes.json()
+          throw new Error(error ?? 'Failed to get upload URL')
+        }
+        const { signedUrl, path } = await urlRes.json()
+
+        // Step 2: Upload the file DIRECTLY to Supabase Storage (bypasses Vercel)
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest()
+          xhr.upload.onprogress = (ev) => {
+            if (ev.lengthComputable) {
+              // Map 0–100% of the file upload to 10–90% of overall progress
+              setUploadProgress(10 + Math.round((ev.loaded / ev.total) * 80))
+            }
+          }
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve()
+            else reject(new Error(`Storage upload failed (${xhr.status}): ${xhr.responseText}`))
+          }
+          xhr.onerror = () => reject(new Error('Network error during upload'))
+          xhr.open('PUT', signedUrl)
+          xhr.setRequestHeader('Content-Type', 'application/pdf')
+          xhr.send(file)
+        })
+
+        file_path = path
+        file_size = file.size
+        setUploadProgress(92)
       }
 
-      await new Promise<void>((resolve, reject) => {
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) resolve()
-          else reject(new Error(xhr.responseText))
-        }
-        xhr.onerror = () => reject(new Error('Upload failed'))
-        xhr.open('POST', '/api/admin/upload')
-        xhr.withCredentials = true
-        xhr.send(fd)
+      // Step 3: Save course metadata in the database
+      const saveRes = await fetch('/api/admin/save-course', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: form.title,
+          course_code: form.course_code,
+          level: form.level,
+          semester: form.semester,
+          description: form.description,
+          file_path,
+          file_size,
+          editingId,
+        }),
       })
+      if (!saveRes.ok) {
+        const { error } = await saveRes.json()
+        throw new Error(error ?? 'Failed to save course')
+      }
 
+      setUploadProgress(100)
       showMsg(editingId ? 'Course updated successfully!' : 'Course uploaded successfully!')
       setForm({ title: '', course_code: '', level: '100', semester: '1st', description: '' })
       setEditingId(null)
