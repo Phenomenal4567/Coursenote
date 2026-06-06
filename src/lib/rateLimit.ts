@@ -23,9 +23,13 @@ export function rateLimit(
 }
 
 // Clean up expired entries every 5 minutes
-setInterval(() => {
+
+ setInterval(() => {
   const now = Date.now()
-  for (const [key, entry] of store.entries()) {
-    if (now > entry.resetAt) store.delete(key)
-  }
+
+  store.forEach((entry, key) => {
+    if (now > entry.resetAt) {
+      store.delete(key)
+    }
+  })
 }, 5 * 60 * 1000)
