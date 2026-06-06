@@ -65,6 +65,7 @@ export function generateSessionToken(): string {
 }
 
 export function generateSessionId(userAgent: string, ip: string): string {
-  const raw = `${userAgent}:${ip}:${Date.now()}`
+  // Must be stable across requests for the same user — do NOT include Date.now()
+  const raw = `${userAgent}:${ip}`
   return crypto.createHash('sha256').update(raw).digest('hex').slice(0, 32)
 }

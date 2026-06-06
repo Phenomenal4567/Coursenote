@@ -50,18 +50,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(403).json({ error: 'Ad engagement required before download.' })
     }
 
-    // Make sure this ad session wasn't already used
+    // Make sure this ad session wasn't already used for THIS file
     const { data: existingDl } = await sb
       .from('verified_downloads')
       .select('id')
-      .eq('session_id', sessionId)
-      .eq('file_id', fileId)
-      .order('downloaded_at', { ascending: false })
-      .limit(1)
-      .single()
+      .eq('ad_session_id', adSession.id)
+      .maybeSingle()
 
-    // Allow re-download if they haven't used this exact ad session
-    // (simplified: just check a recent ad session exists)
+    if (existingDl) {
+      return res.status(403).json({ error: 'This ad session has already been used. Please visit a partner site again.' })
+    }
   }
 
   // Issue signed download JWT
