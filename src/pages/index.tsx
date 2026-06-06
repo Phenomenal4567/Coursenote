@@ -110,7 +110,7 @@ export default function Home({ initialCourses, totalDownloads }: Props) {
   return (
     <>
       <Head>
-        <title>CourseNotes — Engineering PDF Hub</title>
+        <title>CourseNotes | Engineering PDF Hub</title>
       </Head>
 
       <Navbar />
