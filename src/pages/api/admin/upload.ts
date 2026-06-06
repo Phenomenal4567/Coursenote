@@ -44,14 +44,16 @@ export default async function handler(
     })
   }
 
+  const fieldsRecord = fields as Record<string, unknown>
+
   const get = (fieldName: string): string => {
-    const value = fields[fieldName]
+    const value = fieldsRecord[fieldName]
 
     if (Array.isArray(value)) {
-      return value[0]?.toString() ?? ''
+      return String(value[0] ?? '')
     }
 
-    return value?.toString() ?? ''
+    return String(value ?? '')
   }
 
   const title = get('title')
@@ -69,10 +71,12 @@ export default async function handler(
 
   const sb = supabaseAdmin()
 
-  const fileList = Array.isArray(files.file)
-    ? files.file
-    : files.file
-      ? [files.file]
+  const uploadedFile = (files as Record<string, any>).file
+
+  const fileList = Array.isArray(uploadedFile)
+    ? uploadedFile
+    : uploadedFile
+      ? [uploadedFile]
       : []
 
   const file = fileList[0]
@@ -104,7 +108,7 @@ export default async function handler(
     }
 
     file_path = storageKey
-    file_size = file.size ?? 0
+    file_size = Number(file.size ?? 0)
 
     const mb = file_size / (1024 * 1024)
 
@@ -114,7 +118,6 @@ export default async function handler(
         : `${(file_size / 1024).toFixed(0)} KB`
   }
 
-  // Update existing course
   if (editingId) {
     const updateData: Record<string, unknown> = {
       title,
@@ -146,7 +149,6 @@ export default async function handler(
     })
   }
 
-  // Create new course
   if (!file_path) {
     return res.status(400).json({
       error: 'PDF file required for new course',
