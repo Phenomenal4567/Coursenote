@@ -1,5 +1,12 @@
-// Simple in-memory rate limiter (use Redis/Upstash for production)
-const store = new Map<string, { count: number; resetAt: number }>()
+// src/lib/rateLimit.ts
+
+type RateLimitEntry = {
+  count: number
+  resetAt: number
+}
+
+// In-memory store (use Redis/Upstash in production)
+const store = new Map<string, RateLimitEntry>()
 
 export function rateLimit(
   key: string,
@@ -9,27 +16,53 @@ export function rateLimit(
   const now = Date.now()
   const entry = store.get(key)
 
-  if (!entry || now > entry.resetAt) {
-    store.set(key, { count: 1, resetAt: now + windowMs })
-    return { allowed: true, remaining: maxRequests - 1 }
+  // First request or expired window
+  if (!entry || now >= entry.resetAt) {
+    store.set(key, {
+      count: 1,
+      resetAt: now + windowMs,
+    })
+
+    return {
+      allowed: true,
+      remaining: Math.max(0, maxRequests - 1),
+    }
   }
 
+  // Limit reached
   if (entry.count >= maxRequests) {
-    return { allowed: false, remaining: 0 }
+    return {
+      allowed: false,
+      remaining: 0,
+    }
   }
 
-  entry.count++
-  return { allowed: true, remaining: maxRequests - entry.count }
+  // Increment count
+  const updated: RateLimitEntry = {
+    ...entry,
+    count: entry.count + 1,
+  }
+
+  store.set(key, updated)
+
+  return {
+    allowed: true,
+    remaining: Math.max(0, maxRequests - updated.count),
+  }
 }
 
-// Clean up expired entries every 5 minutes
-
- setInterval(() => {
+// Cleanup expired entries every 5 minutes
+const cleanupInterval = setInterval(() => {
   const now = Date.now()
 
   store.forEach((entry, key) => {
-    if (now > entry.resetAt) {
+    if (now >= entry.resetAt) {
       store.delete(key)
     }
   })
 }, 5 * 60 * 1000)
+
+// Prevent interval from keeping Node alive
+if (typeof cleanupInterval.unref === "function") {
+  cleanupInterval.unref()
+}
