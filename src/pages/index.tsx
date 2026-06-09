@@ -35,15 +35,28 @@ export default function Home({ initialCourses, totalDownloads }: Props) {
   // ─────────────────────────────────────────
   // Safe localStorage init (client only)
   // ─────────────────────────────────────────
-  useEffect(() => {
+ useEffect(() => {
     if (typeof window === 'undefined') return
 
     const count = parseInt(localStorage.getItem(SK) || '0', 10)
-    const unlocked = localStorage.getItem(SK2) === '1' || count >= 5
+    const localUnlocked = localStorage.getItem(SK2) === '1' || count >= 5
 
-    setUnlocked(unlocked)
+    if (localUnlocked) {
+      setUnlocked(true)
+      return
+    }
+
+    // Check server for unlock status
+    fetch('/api/download/status', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.unlocked) {
+          localStorage.setItem(SK2, '1')
+          setUnlocked(true)
+        }
+      })
+      .catch(() => {})
   }, [])
-
   // ─────────────────────────────────────────
   // Toast handler (safe cleanup)
   // ─────────────────────────────────────────
