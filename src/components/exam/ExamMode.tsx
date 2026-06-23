@@ -156,15 +156,17 @@ export default function ExamMode({ questions, onExit }: ExamModeProps) {
             onJump={setCurrent}
           />
 
-          <button
-            className="btn-submit-exam"
-            onClick={() => setShowConfirm(true)}
-          >
-            Submit Exam
-          </button>
-          <button className="btn-exit-exam" onClick={onExit}>
-            Exit
-          </button>
+          <div className="exam-action-row">
+            <button
+              className="btn-submit-exam"
+              onClick={() => setShowConfirm(true)}
+            >
+              Submit Exam
+            </button>
+            <button className="btn-exit-exam" onClick={onExit}>
+              Exit
+            </button>
+          </div>
         </div>
       </div>
 

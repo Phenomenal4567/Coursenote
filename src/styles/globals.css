@@ -1229,13 +1229,25 @@ textarea { resize: vertical; min-height: 80px; }
   gap: 1rem;
   align-items: start;
 }
-@media (max-width: 740px) {
-  .exam-layout { grid-template-columns: 1fr; }
-  .exam-sidebar-col { order: -1; }
-}
 
 .exam-main-col { display: flex; flex-direction: column; gap: .75rem; }
 .exam-sidebar-col { display: flex; flex-direction: column; gap: .6rem; position: sticky; top: 80px; }
+
+@media (max-width: 740px) {
+  .exam-layout {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: unset;
+  }
+  /* Question area stays on top */
+  .exam-main-col { order: 1; }
+  /* Palette goes below — no sticky, no overlap */
+  .exam-sidebar-col {
+    order: 2;
+    position: static;
+    top: auto;
+  }
+}
 
 .exam-header-row {
   display: flex; justify-content: space-between; align-items: center;
@@ -1277,6 +1289,12 @@ textarea { resize: vertical; min-height: 80px; }
   border-radius: 14px;
   padding: 1rem;
 }
+@media (max-width: 740px) {
+  .exam-sidebar-card {
+    border-radius: 12px;
+    padding: .85rem;
+  }
+}
 
 .palette-title {
   font-size: .72rem; font-weight: 600; letter-spacing: .06em;
@@ -1287,6 +1305,13 @@ textarea { resize: vertical; min-height: 80px; }
 .palette-grid {
   display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px;
   margin-bottom: .75rem;
+}
+@media (max-width: 740px) {
+  .palette-grid {
+    grid-template-columns: repeat(10, 1fr);
+    gap: 4px;
+  }
+  .palette-btn { font-size: .65rem; }
 }
 
 .palette-btn {
@@ -1363,6 +1388,20 @@ textarea { resize: vertical; min-height: 80px; }
   cursor: pointer; transition: border-color .2s, color .2s;
 }
 .btn-exit-exam:hover { border-color: var(--accent2); color: var(--text); }
+
+@media (max-width: 740px) {
+  .exam-sidebar-col .btn-submit-exam,
+  .exam-sidebar-col .btn-exit-exam {
+    flex: 1;
+  }
+  /* wrap submit+exit side-by-side on mobile */
+  .exam-sidebar-col {
+    gap: .5rem;
+  }
+  .exam-sidebar-col .btn-submit-exam + .btn-exit-exam {
+    margin-top: 0;
+  }
+}
 
 /* ─── CONFIRM MODAL ─────────────────────────────────────────── */
 .modal-overlay {
@@ -1597,3 +1636,17 @@ textarea { resize: vertical; min-height: 80px; }
   transition: opacity .2s, transform .15s;
 }
 .exam-promo-btn:hover { opacity: .9; transform: translateY(-1px); }
+
+/* ─── EXAM ACTION ROW (submit + exit) ───────────────────────── */
+.exam-action-row {
+  display: flex; flex-direction: column; gap: .5rem;
+}
+@media (max-width: 740px) {
+  .exam-action-row {
+    flex-direction: row;
+  }
+  .exam-action-row .btn-submit-exam,
+  .exam-action-row .btn-exit-exam {
+    flex: 1;
+  }
+}
