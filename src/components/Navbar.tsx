@@ -24,6 +24,9 @@ export default function Navbar() {
         Course<span>Notes</span>
       </Link>
       <div className="nav-right">
+        <Link href="/exam" className="nav-exam-link">
+          ✏️ Exam Practice
+        </Link>
         <span className="badge-free">Free</span>
         <button
           className="theme-toggle"
